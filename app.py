@@ -5,13 +5,51 @@ import os
 
 app = Flask(__name__)
 
-#Create datebase
+#Create and initialize datebase
 basedir = os.path.abspath(os.path.dirname(__file__))
-print(basedir)
 
-@app.route('/', methods = ['GET'])
-def get():
-    return jsonify({ 'msg' : 'Madzia kocha Krzysia'})
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'db.sqlite')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+#initialize Marshmallow
+ma = Marshmallow(app)
+
+#Jar class model
+class Jar(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(50), unique=True)
+    amount = db.Column(db.Float)
+    
+
+    def __init__(self, name, amount):
+        self.name = name
+        self.amount = amount
+
+#Jar schema
+class JarSchema(ma.Schema):
+    class Meta:
+        fields = ('id', 'name', 'amount')
+
+#Initialize schema
+jar_schema = JarSchema()
+jars_schema = JarSchema(many=True)
+
+
+#Create a jar
+@app.route('/jar', methods=['POST'])
+def add_jar():
+    name = request.json['name']
+    amount = request.json['amount']
+
+    new_jar = Jar(name, amount)
+
+    db.session.add(new_jar)
+    db.session.commit()
+
+    return jar_schema.jsonify(new_jar)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
+ 
