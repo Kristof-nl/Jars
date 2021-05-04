@@ -50,6 +50,23 @@ def add_jar():
     return jar_schema.jsonify(new_jar)
 
 
+#Get all jars
+@app.route('/jar', methods=['GET'])
+def get_jars():
+    all_jars = Jar.query.all()
+    result = jars_schema.dump(all_jars)
+
+    return jsonify(result)
+
+#Get single jar
+@app.route('/jar/<id>', methods=['GET'])
+def get_jar(id):
+    jar = Jar.query.get(id)
+
+    return jar_schema.jsonify(jar)
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
  
