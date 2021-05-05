@@ -65,6 +65,31 @@ def get_jar(id):
 
     return jar_schema.jsonify(jar)
 
+#Update jar
+@app.route('/jar/<id>', methods=['PUT'])
+def update_jar(id):
+    jar = Jar.query.get(id)
+
+    name = request.json['name']
+    amount = request.json['amount']
+
+    jar.name = name
+    jar.amount = amount
+
+    db.session.commit()
+
+    return jar_schema.jsonify(jar)
+
+
+#Delete jar
+@app.route('/jar/<id>', methods=['DELETE'])
+def delete_jar(id):
+    jar = Jar.query.get(id)
+
+    db.session.delete(jar)
+    db.session.commit()
+
+    return jar_schema.jsonify(jar)
 
 
 if __name__ == '__main__':
