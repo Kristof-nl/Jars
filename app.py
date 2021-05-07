@@ -122,12 +122,59 @@ def add_to_jar(id):
     jar = Jar.query.get(id)
     old_amount = jar.amount
     from_form = request.form
-    
-    jar.amount = float(old_amount) + float(from_form['amount'])
+    if float(from_form['amount']) <= 0:
+        return "Amount must be bigger than 0"
+    else:
+        jar.amount = float(old_amount) + float(from_form['amount'])
     
     db.session.commit()
 
     return jar_schema.jsonify(jar)
+
+#Edit jar name
+@app.route('/jar/<id>/edit', methods=['PUT'])
+def edit_jar_name(id):
+    jar = Jar.query.get(id)
+    old_name = jar.name
+    from_form = request.form
+    
+    jar.name = from_form['name']
+    
+    db.session.commit()
+
+    return jar_schema.jsonify(jar)
+
+
+#Currency
+@app.route('/jar/<id>/<currency>', methods=['GET'])
+def ero(id, currency):
+    jar = Jar.query.get(id)
+    if currency == "euro":
+        jar.amount = jar.amount * 0.22
+    elif currency == "USD":
+         jar.amount = jar.amount * 0.26
+    elif currency == "GBP":
+         jar.amount = jar.amount * 0.19
+
+    return jar_schema.jsonify(jar)
+
+
+#Transfer
+@app.route('/jar/<id1>/<id2>/tr', methods=['PUT'])
+def transfer(id1,id2):
+    jar1 = Jar.query.get(id1)
+    jar2 = Jar.query.get(id2)
+    old_amount1 = jar1.amount
+    old_amount2 = jar2.amount
+    from_form = request.form
+    if float(from_form['amount']) <= 0:
+        return "Amount must be bigger than 0"
+    else:
+        jar1.amount = float(old_amount1) + float(from_form['amount'])
+        jar2.amount = float(old_amount2) - float(from_form['amount'])
+    db.session.commit()
+
+    return jar_schema.jsonify(jar1)
 
 
 if __name__ == '__main__':
