@@ -40,23 +40,19 @@ jars_schema = JarSchema(many=True)
 #Operation class model
 class Operation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    jar_name = db.Column(db.String(50), unique=True)
-    sort_operation = db.Column(db.String(50))
-    amount = db.Column(db.Float)
+    sort_operation = db.Column(db.String(100))
 
-    def __init__(self, jar_name, sort_operation, amount):
-        self.jar_name = jar_name
+    def __init__(self, sort_operation):
         self.sort_operation = sort_operation
-        self.amount = amount
 
 #Operation schema
 class OperationSchema(ma.Schema):
     class Meta:
-        fields = ('id', 'jar_name', 'sort_operation', 'amount')
+        fields = ('id','sort_operation')
 
 #Initialize schema
 operation_schema = OperationSchema()
-operations_schema = JarSchema(many=True)
+operations_schema = OperationSchema(many=True)
 
 
 #Create a jar
@@ -162,6 +158,7 @@ def ero(id, currency):
 #Transfer
 @app.route('/jar/<id1>/<id2>/tr', methods=['PUT'])
 def transfer(id1,id2):
+    #Transfer operation
     jar1 = Jar.query.get(id1)
     jar2 = Jar.query.get(id2)
     old_amount1 = jar1.amount
@@ -175,9 +172,22 @@ def transfer(id1,id2):
             jar2.amount = float(old_amount2) - float(from_form['amount'])
         else:
             return f"Not enough money in jar with id{id2} for this opperation"
+
+    #Save transaction
+    jar1_id = jar1.id
+    jar2_id = jar2.id
+    new_amount_jar1 = jar1.amount
+    new_amount_jar2 = jar2.amount
+    sort_operation = f"Transfer {float(from_form['amount'])} from jar_id{id2} to jar_id{id1}"
+    new_operation = Operation(sort_operation)
+    
+
+    db.session.add(new_operation)
+    
+    
     db.session.commit()
 
-    return jar_schema.jsonify(jar1)
+    return operation_schema.jsonify(new_operation)
 
 
 if __name__ == '__main__':
