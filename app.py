@@ -170,8 +170,11 @@ def transfer(id1,id2):
     if float(from_form['amount']) <= 0:
         return "Amount must be bigger than 0"
     else:
-        jar1.amount = float(old_amount1) + float(from_form['amount'])
-        jar2.amount = float(old_amount2) - float(from_form['amount'])
+        if float(from_form['amount']) <= float(old_amount2):
+            jar1.amount = float(old_amount1) + float(from_form['amount'])
+            jar2.amount = float(old_amount2) - float(from_form['amount'])
+        else:
+            return f"Not enough money in jar with id{id2} for this opperation"
     db.session.commit()
 
     return jar_schema.jsonify(jar1)
