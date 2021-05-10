@@ -190,6 +190,24 @@ def transfer(id1,id2):
     return operation_schema.jsonify(new_operation)
 
 
+#Get transaction
+@app.route('/jar/transaction/<id>', methods=['GET'])
+def get_transaction(id):
+    transaction = Operation.query.get(id)
+
+    return operation_schema.jsonify(transaction)
+
+
+#Get all transactions
+@app.route('/jar/transaction', methods=['GET'])
+def get_transactions():
+    all_transactions = Operation.query.all()
+    result = operations_schema.dump(all_transactions)
+
+    return jsonify(result)
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)
  
