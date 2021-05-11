@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-import os
+import os, json, re
 
 app = Flask(__name__)
 
@@ -122,10 +122,35 @@ def add_to_jar(id):
         return "Amount must be bigger than 0"
     else:
         jar.amount = float(old_amount) + float(from_form['amount'])
+
+    #Save operation
+    sort_operation = f"Add {float(from_form['amount'])} to jar_id{id}. Balance after this operation: {jar.amount}"
+    new_operation = Operation(sort_operation)
     
+    db.session.add(new_operation)
     db.session.commit()
 
-    return jar_schema.jsonify(jar)
+    return operation_schema.jsonify(new_operation)
+
+#Withdrawn amount
+@app.route('/jar/<id>/withdraw', methods=['PUT'])
+def withdraw_from_jar(id):
+    jar = Jar.query.get(id)
+    old_amount = jar.amount
+    from_form = request.form
+    if float(from_form['amount']) > old_amount:
+        return "Not enough money for this transaction"
+    else:
+        jar.amount = float(old_amount) - float(from_form['amount'])
+
+    #Save operation
+    sort_operation = f"Withdraw {float(from_form['amount'])} from jar_id{id}. Balance after this operation: {jar.amount}"
+    new_operation = Operation(sort_operation)
+    
+    db.session.add(new_operation)
+    db.session.commit()
+
+    return operation_schema.jsonify(new_operation)
 
 #Edit jar name
 @app.route('/jar/<id>/edit', methods=['PUT'])
@@ -206,6 +231,32 @@ def get_transactions():
 
     return jsonify(result)
 
+
+#Get all transactions for specific jar
+@app.route('/jar/transactions/<id>', methods=['GET'])
+def get_jar_transactions(id):
+    all_transactions = Operation.query.all()
+    result = operations_schema.dump(all_transactions)
+
+    all_operation = json.dumps(result)
+    
+    lst = re.split("{}", all_operation)
+    print(lst)
+    lst = list(lst.split())
+    print(lst)
+    jar_operation = []
+    
+
+    for sentence in lst:
+        if "jar_id"+str(id) in sentence:
+            jar_operation.append(sentence)
+
+    
+    
+       
+
+
+    return jsonify(result)  
 
 
 if __name__ == '__main__':
