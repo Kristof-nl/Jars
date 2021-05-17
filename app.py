@@ -239,25 +239,20 @@ def get_jar_transactions(id):
     result = operations_schema.dump(all_transactions)
 
     all_operation = json.dumps(result)
-    
-    lst = re.split("{}", all_operation)
-    print(lst)
-    lst = list(lst.split())
-    print(lst)
-    jar_operation = []
-    
-
-    for sentence in lst:
-        if "jar_id"+str(id) in sentence:
-            jar_operation.append(sentence)
-
-    
-    
-       
 
 
-    return jsonify(result)  
+    jar_operation = {}
 
+    a = all_operation[2:-2]
+    operations = a.split("}, {")
+
+    counter = 0
+    for operation in operations:
+        if "jar_id"+str(id) in operation:
+            jar_operation["operation"+str(counter)] = operation
+            counter += 1
+
+    return jar_operation
 
 if __name__ == '__main__':
     app.run(debug=True)
