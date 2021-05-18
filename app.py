@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_marshmallow import Marshmallow
-import os, json, re
+import os, json, re, datetime
 
 app = Flask(__name__)
 
@@ -20,6 +20,7 @@ class Jar(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
     amount = db.Column(db.Float)
+    create_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now().replace(microsecond=0))
     
 
     def __init__(self, name, amount):
@@ -29,7 +30,7 @@ class Jar(db.Model):
 #Jar schema
 class JarSchema(ma.Schema):
     class Meta:
-        fields = ('id', 'name', 'amount')
+        fields = ('id', 'name', 'amount', 'create_time')
 
 
 #Initialize schema
@@ -246,13 +247,13 @@ def get_jar_transactions(id):
     a = all_operation[2:-2]
     operations = a.split("}, {")
 
-    counter = 0
+    counter = 1
     for operation in operations:
         if "jar_id"+str(id) in operation:
-            jar_operation["operation"+str(counter)] = operation
+            jar_operation[counter] = operation
             counter += 1
 
-    return jar_operation
+    return dict(jar_operation)
 
 if __name__ == '__main__':
     app.run(debug=True)
