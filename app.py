@@ -40,16 +40,19 @@ jars_schema = JarSchema(many=True)
 
 #Operation class model
 class Operation(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    operation_id = db.Column(db.Integer, primary_key=True)
+    jar_id = db.Column(db.Integer)
     sort_operation = db.Column(db.String(100))
+    operation_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now().replace(microsecond=0))
 
-    def __init__(self, sort_operation):
+    def __init__(self, jar_id, sort_operation):
+        self.jar_id = jar_id
         self.sort_operation = sort_operation
 
 #Operation schema
 class OperationSchema(ma.Schema):
     class Meta:
-        fields = ('id','sort_operation')
+        fields = ('operation_id', 'jar_id', 'sort_operation', 'operation_time')
 
 #Initialize schema
 operation_schema = OperationSchema()
@@ -125,15 +128,16 @@ def add_to_jar(id):
         jar.amount = float(old_amount) + float(from_form['amount'])
 
     #Save operation
-    sort_operation = f"Add {float(from_form['amount'])} to jar_id{id}. Balance after this operation: {jar.amount}"
-    new_operation = Operation(sort_operation)
+    sort_operation = f"Add {float(from_form['amount'])}. Balance after this operation: {jar.amount}"
+    jar_id = id
+    new_operation = Operation(jar_id, sort_operation)
     
     db.session.add(new_operation)
     db.session.commit()
 
     return operation_schema.jsonify(new_operation)
 
-#Withdrawn amount
+#Withdraw amount
 @app.route('/jar/<id>/withdraw', methods=['PUT'])
 def withdraw_from_jar(id):
     jar = Jar.query.get(id)
@@ -145,8 +149,9 @@ def withdraw_from_jar(id):
         jar.amount = float(old_amount) - float(from_form['amount'])
 
     #Save operation
-    sort_operation = f"Withdraw {float(from_form['amount'])} from jar_id{id}. Balance after this operation: {jar.amount}"
-    new_operation = Operation(sort_operation)
+    sort_operation = f"Withdraw {float(from_form['amount'])}. Balance after this operation: {jar.amount}"
+    jar_id = id
+    new_operation = Operation(jar_id, sort_operation)
     
     db.session.add(new_operation)
     db.session.commit()
@@ -200,20 +205,22 @@ def transfer(id1,id2):
             return f"Not enough money in jar with id{id2} for this opperation"
 
     #Save transaction
-    jar1_id = jar1.id
-    jar2_id = jar2.id
     new_amount_jar1 = jar1.amount
     new_amount_jar2 = jar2.amount
-    sort_operation = f"Transfer {float(from_form['amount'])} from jar_id{id2} to jar_id{id1}"
-    new_operation = Operation(sort_operation)
-    
+    #Separate it in 2 transaction add for jar1 and withdraw for jar2
+    jar_id1 = id1
+    sort_operation1 = f"Transfer(add) {float(from_form['amount'])} from jar_id{id2}. Balance after this operation: {new_amount_jar1}."
+    jar_id2 = id2
+    sort_operation2 = f"Transfer(withdraw) {float(from_form['amount'])} to jar_id{id1}. Balance after this operation: {new_amount_jar2}."
 
-    db.session.add(new_operation)
-    
-    
+    new_operation1 = Operation(jar_id1, sort_operation1)
+    new_operation2 = Operation(jar_id2, sort_operation2)
+
+    db.session.add(new_operation1)
+    db.session.add(new_operation2)
     db.session.commit()
 
-    return operation_schema.jsonify(new_operation)
+    return operation_schema.jsonify(new_operation1)
 
 
 #Get transaction
@@ -225,7 +232,7 @@ def get_transaction(id):
 
 
 #Get all transactions
-@app.route('/jar/transaction', methods=['GET'])
+@app.route('/jar/transactions', methods=['GET'])
 def get_transactions():
     all_transactions = Operation.query.all()
     result = operations_schema.dump(all_transactions)
@@ -239,21 +246,12 @@ def get_jar_transactions(id):
     all_transactions = Operation.query.all()
     result = operations_schema.dump(all_transactions)
 
-    all_operation = json.dumps(result)
+    #Get only transactions with specific id
+    result_id = (list(filter(lambda x:x["jar_id"]== int(id), result)))
+    
 
+    return jsonify(result_id)
 
-    jar_operation = {}
-
-    a = all_operation[2:-2]
-    operations = a.split("}, {")
-
-    counter = 1
-    for operation in operations:
-        if "jar_id"+str(id) in operation:
-            jar_operation[counter] = operation
-            counter += 1
-
-    return dict(jar_operation)
 
 if __name__ == '__main__':
     app.run(debug=True)
