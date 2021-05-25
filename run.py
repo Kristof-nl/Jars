@@ -220,7 +220,8 @@ def transfer(id1,id2):
     new_operation1 = Operation(jar_id1, sort_operation1, operation_time)
     new_operation2 = Operation(jar_id2, sort_operation2, operation_time)
 
-    db.session.add(new_operation1, new_operation2)
+    db.session.add(new_operation1)
+    db.session.add(new_operation2)
     db.session.commit()
 
     return operation_schema.jsonify(new_operation1)
