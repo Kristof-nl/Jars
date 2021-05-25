@@ -1,7 +1,6 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-
-import os, json
+import os, json, datetime
 
 app = Flask(__name__)
 
@@ -21,11 +20,11 @@ from models import Jar, Operation, jar_schema, jars_schema, operation_schema, op
 def add_jar():
     name = request.json['name']
     amount = request.json['amount']
+    create_time = datetime.datetime.now().replace(microsecond=0)
     if amount < 0:
         return "Amount can't be smaller than 0"
     else:
-        new_jar = Jar(name, amount)
-
+        new_jar = Jar(name, amount, create_time)
         db.session.add(new_jar)
         db.session.commit()
 
@@ -74,7 +73,7 @@ def delete_jar(id):
 
         db.session.delete(jar)
         db.session.commit()
-        return f"Choosen jar id: {id} is deleted"
+        return f"Choose jar id: {id} was deleted"
 
     else:
         return "Jar with this id doesn't exist."
@@ -95,7 +94,8 @@ def add_to_jar(id):
         #Save operation
         sort_operation = f"Add {float(from_form['amount'])}. Balance after this operation: {jar.amount}"
         jar_id = id
-        new_operation = Operation(jar_id, sort_operation)
+        operation_time = datetime.datetime.now().replace(microsecond=0)
+        new_operation = Operation(jar_id, sort_operation, operation_time)
         
         db.session.add(new_operation)
         db.session.commit()
@@ -120,7 +120,8 @@ def withdraw_from_jar(id):
         #Save operation
         sort_operation = f"Withdraw {float(from_form['amount'])}. Balance after this operation: {jar.amount}"
         jar_id = id
-        new_operation = Operation(jar_id, sort_operation)
+        operation_time = datetime.datetime.now().replace(microsecond=0)
+        new_operation = Operation(jar_id, sort_operation, operation_time)
         
         db.session.add(new_operation)
         db.session.commit()
@@ -179,6 +180,7 @@ def currency(id, currency):
     else:  
         return "Jar with this id doesn't exist."
 
+
 #Transfer
 @app.route('/jar/<id1>/<id2>/tr', methods=['PUT'])
 def transfer(id1,id2):
@@ -208,14 +210,15 @@ def transfer(id1,id2):
     #Save transaction
     new_amount_jar1 = jar1.amount
     new_amount_jar2 = jar2.amount
+    operation_time = datetime.datetime.now().replace(microsecond=0)
     #Separate it in 2 transaction add for jar1 and withdraw for jar2
     jar_id1 = id1
     sort_operation1 = f"Transfer(add) {float(from_form['amount'])} from jar_id{id2}. Balance after this operation: {new_amount_jar1}."
     jar_id2 = id2
     sort_operation2 = f"Transfer(withdraw) {float(from_form['amount'])} to jar_id{id1}. Balance after this operation: {new_amount_jar2}."
 
-    new_operation1 = Operation(jar_id1, sort_operation1)
-    new_operation2 = Operation(jar_id2, sort_operation2)
+    new_operation1 = Operation(jar_id1, sort_operation1, operation_time)
+    new_operation2 = Operation(jar_id2, sort_operation2, operation_time)
 
     db.session.add(new_operation1, new_operation2)
     db.session.commit()
@@ -254,7 +257,7 @@ def get_jar_transactions(id):
     if result_id:
         return jsonify(result_id)
     else:
-        return "There isn't a jar with this id."
+        return "Jar with this id doesn't exist."
 
 
 if __name__ == '__main__':

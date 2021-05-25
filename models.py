@@ -11,12 +11,13 @@ class Jar(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True)
     amount = db.Column(db.Float)
-    create_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now().replace(microsecond=0))
+    create_time = db.Column(db.DATETIME)
     
 
-    def __init__(self, name, amount):
+    def __init__(self, name, amount, create_time):
         self.name = name
         self.amount = amount
+        self.create_time = create_time
 
 #Jar schema
 class JarSchema(ma.Schema):
@@ -34,11 +35,13 @@ class Operation(db.Model):
     operation_id = db.Column(db.Integer, primary_key=True)
     jar_id = db.Column(db.Integer)
     sort_operation = db.Column(db.String(100))
-    operation_time = db.Column(db.TIMESTAMP, default=datetime.datetime.now().replace(microsecond=0))
+    operation_time = db.Column(db.DATETIME)
 
-    def __init__(self, jar_id, sort_operation):
+    def __init__(self, jar_id, sort_operation, operation_time):
         self.jar_id = jar_id
         self.sort_operation = sort_operation
+        self.operation_time = operation_time
+
 
 #Operation schema
 class OperationSchema(ma.Schema):
